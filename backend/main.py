@@ -1,5 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-import random
+from buffer import AudioBuffer
+from audio import decode_audio
+from model import infer_emotion
 
 app = FastAPI()
 
@@ -7,41 +9,31 @@ app = FastAPI()
 def health():
     return {"status": "ok"}
 
-@app.websocket("/ws/test")
-async def emotion_ws(ws: WebSocket):
-    await ws.accept()
-    try:
-        while True:
-            data = await ws.receive_text()  # nanti ini audio
-            await ws.send_json({
-                "emotion": random.choice(["senang", "sedih", "marah", "netral"]),
-                "confidence": round(random.uniform(0.6, 0.95), 2)
-            })
-    except:
-        await ws.close()
-
-
 @app.websocket("/ws/emotion")
 async def ws_emotion(ws: WebSocket):
     await ws.accept()
+
+    buffer = AudioBuffer(
+        window_size=16000 * 2,
+        stride=16000
+    )
+
     try:
         while True:
             msg = await ws.receive_json()
 
             if msg.get("type") != "audio_chunk":
-                await ws.send_json({"error": "invalid type"})
                 continue
 
-            audio_b64 = msg["data"]
-            sr = msg["sample_rate"]
+            audio = decode_audio(msg["data"])
 
-            print("Chunk diterima:", len(audio_b64), "SR:", sr)
+            window = buffer.add(audio.tolist())
+            if window:
+                result = infer_emotion(window)
+                await ws.send_json({
+                    "type": "emotion",
+                    **result
+                })
 
-            # DUMMY inference
-            await ws.send_json({
-                "type": "emotion",
-                "label": "neutral",
-                "confidence": 0.9
-            })
     except WebSocketDisconnect:
         print("Client disconnected")

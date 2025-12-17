@@ -1,3 +1,6 @@
+# OFFLINE TEST ONLY
+# DO NOT USE IN WEBSOCKET
+
 import torch
 import soundfile as sf
 from transformers import AutoFeatureExtractor, AutoModelForAudioClassification
