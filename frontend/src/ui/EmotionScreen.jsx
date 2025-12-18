@@ -24,7 +24,6 @@ export default function EmotionScreen({ emotion, confidence, started, onStart })
 
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-white/80 animate-glow" />
           <h1 className="text-lg font-bold text-white tracking-tight">Voice Emotion</h1>
         </div>
 
