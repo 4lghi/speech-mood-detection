@@ -1,37 +1,19 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
-const WS_URL = "ws://localhost:8000/ws/emotion";
 const TARGET_SR = 16000;
-const CHUNK_SIZE = 8000; // 0.5 detik
+const CHUNK_SIZE = 8000;
 
-export default function MicStreamer() {
-  const wsRef = useRef(null);
+export function useMicStreamer(wsRef) {
   const audioCtxRef = useRef(null);
   const processorRef = useRef(null);
   const bufferRef = useRef([]);
-
-  const [emotion, setEmotion] = useState("—");
-  const [confidence, setConfidence] = useState(0);
-
-  useEffect(() => {
-    wsRef.current = new WebSocket(WS_URL);
-
-    wsRef.current.onmessage = (evt) => {
-      const data = JSON.parse(evt.data);
-      if (data.type === "emotion") {
-        setEmotion(data.emotion);
-        setConfidence(data.confidence);
-      }
-    };
-
-    return () => {
-      wsRef.current?.close();
-    };
-  }, []);
+  const [started, setStarted] = useState(false);
 
   async function startMic() {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    if (started) return;
+    setStarted(true);
 
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const audioCtx = new AudioContext();
     audioCtxRef.current = audioCtx;
 
@@ -49,9 +31,7 @@ export default function MicStreamer() {
       bufferRef.current.push(...resampled);
 
       if (bufferRef.current.length >= CHUNK_SIZE) {
-        const chunk = bufferRef.current.slice(0, CHUNK_SIZE);
-        bufferRef.current = bufferRef.current.slice(CHUNK_SIZE);
-
+        const chunk = bufferRef.current.splice(0, CHUNK_SIZE);
         sendChunk(chunk);
       }
     };
@@ -73,21 +53,13 @@ export default function MicStreamer() {
     );
   }
 
-  return (
-    <div style={{ padding: 20 }}>
-      <h2>Realtime Speech Emotion</h2>
-      <button onClick={startMic}>Start Mic</button>
-      <p>Emotion: <b>{emotion}</b></p>
-      <p>Confidence: {confidence.toFixed(2)}</p>
-    </div>
-  );
+  return { startMic, started };
 }
 
-
 function resampleTo16k(input, inputRate) {
-  if (inputRate === 16000) return input;
+  if (inputRate === TARGET_SR) return input;
 
-  const ratio = inputRate / 16000;
+  const ratio = inputRate / TARGET_SR;
   const newLength = Math.round(input.length / ratio);
   const output = new Float32Array(newLength);
 
