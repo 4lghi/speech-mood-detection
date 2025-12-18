@@ -71,7 +71,7 @@ export default function EmotionScreen({ emotion, confidence, started, onStart })
                       />
                     </svg>
                   </div>
-                  <span className="text-lg font-bold text-white tracking-tight">Start listening</span>
+                  <span className="text-lg font-bold text-white tracking-tight">Start Talking</span>
                 </div>
               </button>
 
