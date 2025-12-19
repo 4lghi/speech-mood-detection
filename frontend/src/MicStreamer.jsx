@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const WS_URL = "ws://localhost:8000/ws/emotion";
+const WS_URL = import.meta.env.VITE_WS_URL;
 const TARGET_SR = 16000;
 const CHUNK_SIZE = 8000; // 0.5 detik
 
